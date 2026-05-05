@@ -3,524 +3,572 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Tac‑Toe (Three.js Edition)</title>
-
-    <!-- PyScript – keep the same version you were using -->
-    <link rel="stylesheet" href="https://pyscript.net/releases/2023.05.1/pyscript.css" />
-    <script defer src="https://pyscript.net/releases/2023.05.1/pyscript.js"></script>
-
-    <!-- Three.js (module) -->
-    <script type="module" src="https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js"></script>
-
-    <!-- ---------- CSS ---------- -->
+    <title>NEON-NEXUS: QUANTUM GRID</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700&family=Share+Tech+Mono&display=swap');
+
         :root {
-            --bg-color: #050505;
-            --neon-blue: #00f3ff;
-            --neon-pink: #ff00ff;
-            --grid-color: #1a1a1a;
-            --text-color: #ffffff;
-            --accent-glow: 0 0 15px var(--neon-pink), 0 0 30px var(--neon-pink);
+            --neon-cyan: #00f0ff;
+            --neon-magenta: #ff003c;
+            --neon-purple: #b026ff;
+            --bg-dark: #050508;
+            --grid-line: rgba(0, 240, 255, 0.15);
         }
 
-        /*=== NEW ===*/
-        /* Animated neon “tunnel” background */
-        body {
-            background: var(--bg-color);
-            overflow: hidden;
-            position: relative;
-            font-family: 'Courier New', Courier, monospace;
+        * {
+            box-sizing: border-box;
+            user-select: none;
         }
-        body::before, body::after {
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-dark);
+            background-image: 
+                linear-gradient(var(--grid-line) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #fff;
+            font-family: 'Rajdhani', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            perspective: 1000px;
+        }
+
+        body::after {
             content: "";
             position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at 50% 50%, transparent 0%, var(--bg-color) 70%);
-            z-index: -2;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 4px, 6px 100%;
+            z-index: 1000;
+            pointer-events: none;
+            opacity: 0.6;
         }
-        body::after {
-            background: repeating-linear-gradient(
-                45deg,
-                rgba(0,255,255,0.03) 0,
-                rgba(0,255,255,0.03) 2px,
-                transparent 2px,
-                transparent 4px
-            );
-            animation: neonShift 8s linear infinite;
-            z-index: -1;
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
         }
-        @keyframes neonShift {
-            from {background-position: 0 0;}
-            to   {background-position: 400% 400%;}
+        .glitch-active { animation: glitch 0.2s linear infinite; }
+
+        @keyframes cameraShake {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            25% { transform: translate(-5px, 5px) rotate(-1deg); }
+            50% { transform: translate(5px, -5px) rotate(1deg); }
+            75% { transform: translate(-5px, 2px) rotate(0deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+        .shake { animation: cameraShake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
+
+        #fx-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        #ui-layer {
+            position: relative;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            max-width: 600px;
+            background: rgba(5, 5, 8, 0.85);
+            padding: 30px;
+            border: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.1), inset 0 0 20px rgba(0, 240, 255, 0.05);
+            border-radius: 4px;
+            backdrop-filter: blur(10px);
+            transform: rotateX(5deg);
         }
 
         h1 {
-            font-size: 3rem;
-            color: var(--neon-pink);
+            font-size: 3.5rem;
+            margin: 0 0 5px 0;
+            letter-spacing: 6px;
             text-transform: uppercase;
-            text-shadow: var(--accent-glow);
-            margin: 20px 0;
-            letter-spacing: 5px;
-            text-align: center;
+            text-shadow: 2px 0 var(--neon-magenta), -2px 0 var(--neon-cyan);
         }
 
-        /* Controls – added difficulty and theme toggle */
-        .controls {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-            margin-bottom: 15px;
+        .subtitle {
+            font-family: 'Share Tech Mono', monospace;
+            color: var(--neon-purple);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
         }
-        button, select {
-            background: transparent;
-            border: 2px solid var(--neon-pink);
-            color: var(--neon-pink);
-            padding: 0.6rem 1.2rem;
-            font-family: inherit;
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+            padding: 0 10px;
+            font-size: 2rem;
+            margin-bottom: 15px;
+            font-family: 'Share Tech Mono', monospace;
+        }
+
+        .score-p1 { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan); }
+        .score-p2 { color: var(--neon-magenta); text-shadow: 0 0 10px var(--neon-magenta); }
+
+        .timer-container {
+            width: 100%;
+            height: 4px;
+            background: #222;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        #timer-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--neon-cyan);
+            box-shadow: 0 0 10px var(--neon-cyan);
+            transition: width 0.1s linear;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(3, 1fr);
+            gap: 10px;
+            padding: 10px;
+            border: 2px solid rgba(255,255,255,0.1);
+            background: rgba(0,0,0,0.5);
+        }
+
+        .cell {
+            width: 110px;
+            height: 110px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 5rem;
+            line-height: 1;
+            cursor: crosshair;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .cell:hover {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+            box-shadow: inset 0 0 15px var(--neon-cyan);
+        }
+
+        .cell.x { color: var(--neon-cyan); text-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan); }
+        .cell.o { color: var(--neon-magenta); text-shadow: 0 0 10px var(--neon-magenta), 0 0 20px var(--neon-magenta); }
+
+        @keyframes pulse-fade {
+            0%, 100% { opacity: 1; transform: scale(1); filter: hue-rotate(0deg); }
+            50% { opacity: 0.3; transform: scale(0.85); filter: hue-rotate(90deg); }
+        }
+        .unstable { animation: pulse-fade 1s ease-in-out infinite; }
+
+        #overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+        }
+
+        #overlay h2 {
+            font-size: 4rem;
+            margin: 0 0 10px 0;
+            text-align: center;
+            color: var(--neon-purple);
+            text-shadow: 0 0 20px var(--neon-purple);
+        }
+
+        #overlay p {
+            font-family: 'Share Tech Mono', monospace;
+            font-size: 1.5rem;
+            color: #aaa;
+            margin-bottom: 30px;
+            text-align: center;
+            max-width: 600px;
+        }
+
+        .menu-options {
+            display: flex;
+            gap: 20px;
+        }
+
+        button {
+            background: rgba(0, 240, 255, 0.05);
+            color: var(--neon-cyan);
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 1.8rem;
             font-weight: bold;
-            font-size: 0.9rem;
+            padding: 15px 30px;
+            border: 2px solid var(--neon-cyan);
             cursor: pointer;
             text-transform: uppercase;
-            box-shadow: 0 0 5px var(--neon-pink);
-            transition: all 0.3s ease;
-        }
-        button:hover, button.active,
-        select:hover, select:focus {
-            background: var(--neon-pink);
-            color: var(--bg-color);
-            box-shadow: 0 0 20px var(--neon-pink);
-        }
-        select {
-            border-color: var(--neon-blue);
-            color: var(--neon-blue);
-            box-shadow: 0 0 5px var(--neon-blue);
-        }
-        select:focus {
-            background: var(--neon-blue);
-            color: var(--bg-color);
-            box-shadow: 0 0 20px var(--neon-blue);
+            transition: all 0.2s ease;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.1);
         }
 
-        /* Canvas for the Three.js board */
-        #gameCanvas {
-            display: block;
-            margin: 0 auto;
-            width: 90vmin;
-            height: 90vmin;
-            border: 2px solid var(--neon-pink);
-            box-shadow: var(--accent-glow);
-            background: rgba(0,0,0,0.2);
+        button:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 40px var(--neon-cyan);
+            transform: scale(1.05);
         }
 
-        #status {
-            margin-top: 15px;
-            font-size: 1.5rem;
-            text-align: center;
-            min-height: 2rem;
-            color: var(--text-color);
-            text-shadow: 0 0 5px #fff;
+        button.magenta-btn {
+            color: var(--neon-magenta);
+            border-color: var(--neon-magenta);
+            box-shadow: 0 0 15px rgba(255, 0, 60, 0.2), inset 0 0 10px rgba(255, 0, 60, 0.1);
+            background: rgba(255, 0, 60, 0.05);
         }
 
-        /* Small responsive tweak */
-        @media (max-width: 600px) {
-            h1 {font-size: 2.2rem;}
-            button, select {font-size: 0.8rem;}
+        button.magenta-btn:hover {
+            background: var(--neon-magenta);
+            color: #000;
+            box-shadow: 0 0 40px var(--neon-magenta);
         }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
-    <h1>Neon Tac‑Toe</h1>
 
-    <div class="controls">
-        <button id="btn-pvp" class="active" onclick="setMode('pvp')">Multiplayer</button>
-        <button id="btn-ai" onclick="setMode('ai')">Vs AI (Python)</button>
+    <canvas id="fx-canvas"></canvas>
 
-        <!--=== NEW ===-->
-        <select id="difficulty" onchange="setDifficulty(this.value)">
-            <option value="hard">Hard (Minimax)</option>
-            <option value="easy">Easy (Random)</option>
-        </select>
+    <div id="ui-layer">
+        <header style="text-align: center;">
+            <h1>NEON-NEXUS</h1>
+            <div class="subtitle">QUANTUM GRID PROTOCOL</div>
+        </header>
 
-        <button id="theme-toggle" onclick="toggleTheme()">Toggle Theme</button>
-        <button onclick="resetGame()">Reset</button>
+        <div class="stats-bar">
+            <div class="score-p1">P1 [X]: <span id="score-x">0</span></div>
+            <div id="turn-indicator" style="color: var(--neon-cyan);">UPLINK: X</div>
+            <div class="score-p2"><span id="p2-label">P2 [O]</span>: <span id="score-o">0</span></div>
+        </div>
+
+        <div class="timer-container">
+            <div id="timer-bar"></div>
+        </div>
+
+        <div class="board" id="board">
+            <div class="cell" data-index="0"></div><div class="cell" data-index="1"></div><div class="cell" data-index="2"></div>
+            <div class="cell" data-index="3"></div><div class="cell" data-index="4"></div><div class="cell" data-index="5"></div>
+            <div class="cell" data-index="6"></div><div class="cell" data-index="7"></div><div class="cell" data-index="8"></div>
+        </div>
     </div>
 
-    <!-- The Three.js canvas – now the board -->
-    <canvas id="gameCanvas"></canvas>
+    <div id="overlay">
+        <h2 id="overlay-msg">SYSTEM STANDBY</h2>
+        <p><strong>QUANTUM RULE:</strong> Max 3 active nodes per player. 4th node collapses your oldest node.</p>
+        <div class="menu-options">
+            <button id="btn-pvp">MULTIPLAYER (LOCAL)</button>
+            <button id="btn-ai" class="magenta-btn">VS. AI (HARDCORE)</button>
+        </div>
+    </div>
 
-    <div id="status">Player X's Turn</div>
+    <script>
+        /** AUDIO SYNTH ENGINE **/
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSynth(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
 
-    <!-- ========================== -->
-    <!-- ========= SCRIPTS ========= -->
-    <!-- ========================== -->
+            if (type === 'place_x') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(800, now); osc.frequency.exponentialRampToValueAtTime(200, now + 0.1);
+                gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
+                osc.start(now); osc.stop(now + 0.1);
+            } else if (type === 'place_o') {
+                osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, now); osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
+                osc.start(now); osc.stop(now + 0.15);
+            } else if (type === 'glitch') {
+                osc.type = 'square'; osc.frequency.setValueAtTime(100, now); osc.frequency.linearRampToValueAtTime(50, now + 0.3);
+                gain.gain.setValueAtTime(0.4, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now); osc.stop(now + 0.3);
+            } else if (type === 'win') {
+                osc.type = 'triangle'; osc.frequency.setValueAtTime(400, now); osc.frequency.linearRampToValueAtTime(1200, now + 0.8);
+                gain.gain.setValueAtTime(0.3, now); gain.gain.linearRampToValueAtTime(0.01, now + 1);
+                osc.start(now); osc.stop(now + 1);
+            }
+        }
 
-    <!-- ---- 1. Three.js 3‑D Board ---- -->
-    <script type="module">
-        /*=== NEW ===*/
-        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.155.0/build/three.module.js';
+        /** AI VOICE ENGINE **/
+        const synth = window.speechSynthesis;
+        const voiceLines = {
+            move: ["Data locked.", "Grid updated.", "Sector claimed."],
+            ai_move: ["Computing vectors.", "AI override.", "Optimal path selected.", "You cannot win."],
+            glitch: ["Warning. Quantum collapse.", "Memory purged."],
+            timeout: ["Signal lost. Penalty applied."],
+            winX: ["Player One dominates the grid.", "Cyan victory."],
+            winO: ["Player Two achieves supremacy.", "Magenta victory."],
+            winAI: ["Humanity obsolete.", "AI achieves supremacy.", "Calculations flawless."]
+        };
 
-        // Global variables (used by both UI & AI)
-        let boardState = Array(9).fill(null);   // null | 'X' | 'O'
+        function speakText(type, specificText = null) {
+            synth.cancel();
+            let text = specificText || voiceLines[type][Math.floor(Math.random() * voiceLines[type].length)];
+            if (text) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.pitch = 0.3; utterance.rate = 1.3; utterance.volume = 0.8;
+                synth.speak(utterance);
+            }
+        }
+
+        /** PARTICLE FX ENGINE **/
+        const canvas = document.getElementById('fx-canvas'); const ctx = canvas.getContext('2d');
+        let particles = [];
+        window.addEventListener('resize', () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; });
+        canvas.width = window.innerWidth; canvas.height = window.innerHeight;
+
+        class Particle {
+            constructor(x, y, color) {
+                this.x = x; this.y = y; this.color = color;
+                const angle = Math.random() * Math.PI * 2; const speed = Math.random() * 20 + 5;
+                this.vx = Math.cos(angle) * speed; this.vy = Math.sin(angle) * speed;
+                this.life = 1.0; this.decay = Math.random() * 0.05 + 0.02; this.size = Math.random() * 4 + 2;
+            }
+            update() { this.x += this.vx; this.y += this.vy; this.vy += 0.8; this.life -= this.decay; }
+            draw() {
+                ctx.globalAlpha = Math.max(0, this.life); ctx.fillStyle = this.color;
+                ctx.shadowBlur = 15; ctx.shadowColor = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size); ctx.shadowBlur = 0;
+            }
+        }
+
+        function triggerExplosion(x, y, color) { for (let i = 0; i < 50; i++) particles.push(new Particle(x, y, color)); }
+        function animateFX() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update(); particles[i].draw();
+                if (particles[i].life <= 0) particles.splice(i, 1);
+            }
+            requestAnimationFrame(animateFX);
+        }
+        animateFX();
+
+        /** GAME LOGIC **/
+        let board = Array(9).fill(null);
         let currentPlayer = 'X';
-        let gameActive = true;
-        let gameMode = 'pvp';       // 'pvp' or 'ai'
-        let difficulty = 'hard';    // 'hard' (minimax) or 'easy' (random)
+        let isGameActive = false;
+        let gameMode = 'pvp'; // 'pvp' or 'ai'
+        let scores = { X: 0, O: 0 };
+        let moveHistory = { X: [], O: [] };
+        
+        const WIN_COMBOS = [[0,1,2], [3,4,5], [6,7,8], [0,3,6], [1,4,7], [2,5,8], [0,4,8], [2,4,6]];
 
-        const statusEl = document.getElementById('status');
+        let turnTimeLeft = 100; 
+        const TURN_DURATION_MS = 6000; 
+        let lastFrameTime = 0;
+        let timerAnimId;
 
-        // ---- Three.js setup ----
-        const canvas = document.getElementById('gameCanvas');
-        const renderer = new THREE.WebGLRenderer({canvas, antialias:true, alpha:true});
-        renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-        const scene = new THREE.Scene();
-        scene.background = new THREE.Color(0x050505);
+        const cells = document.querySelectorAll('.cell');
+        const timerBar = document.getElementById('timer-bar');
+        const overlay = document.getElementById('overlay');
+        const overlayMsg = document.getElementById('overlay-msg');
+        const turnIndicator = document.getElementById('turn-indicator');
+        const uiLayer = document.getElementById('ui-layer');
 
-        // camera – orthographic gives a “flat” look that works well for a board
-        const aspect = canvas.clientWidth / canvas.clientHeight;
-        const frustumSize = 4;
-        const camera = new THREE.OrthographicCamera(
-            frustumSize * aspect / -2, frustumSize * aspect / 2,
-            frustumSize / 2, frustumSize / -2,
-            0.1, 100
-        );
-        camera.position.set(0, 0, 5);
-        camera.lookAt(0,0,0);
+        function triggerShake(heavy = false) {
+            uiLayer.classList.remove('shake', 'glitch-active');
+            void uiLayer.offsetWidth;
+            uiLayer.classList.add(heavy ? 'glitch-active' : 'shake');
+            if(heavy) setTimeout(() => uiLayer.classList.remove('glitch-active'), 400);
+        }
 
-        // Light – only needed for the glowing material
-        const ambient = new THREE.AmbientLight(0xffffff, 0.8);
-        scene.add(ambient);
+        function updateTimer(timestamp) {
+            if (!isGameActive) return;
+            if (!lastFrameTime) lastFrameTime = timestamp;
+            const deltaTime = timestamp - lastFrameTime;
+            lastFrameTime = timestamp;
 
-        // ---- Helper constants ----
-        const CELL_SIZE = 1;          // each cell is a 1×1 square
-        const BOARD_OFFSET = -1;      // board is centered at (0,0)
+            turnTimeLeft -= (deltaTime / TURN_DURATION_MS) * 100;
+            timerBar.style.width = `${Math.max(0, turnTimeLeft)}%`;
+            timerBar.style.backgroundColor = turnTimeLeft > 50 ? 'var(--neon-cyan)' : turnTimeLeft > 25 ? 'var(--neon-purple)' : 'var(--neon-magenta)';
 
-        // Storage for mesh references (so we can highlight + clear later)
-        const cellMeshes = [];   // length 9
-        const symbolSprites = []; // X/O sprites we add
-
-        // ---- Build the board (grid + squares) ----
-        function createBoard() {
-            // 1️⃣ create the 9 cells (planes)
-            const geometry = new THREE.PlaneGeometry(CELL_SIZE, CELL_SIZE);
-            const material = new THREE.MeshBasicMaterial({
-                color: 0x111111,
-                side: THREE.DoubleSide
-            });
-            const edgeMaterial = new THREE.MeshBasicMaterial({
-                color: 0x333333,
-                side: THREE.DoubleSide,
-                transparent: true,
-                opacity: 0.5
-            });
-
-            for (let i = 0; i < 9; i++) {
-                const row = Math.floor(i / 3);
-                const col = i % 3;
-                const x = BOARD_OFFSET + col * CELL_SIZE + CELL_SIZE/2;
-                const z = BOARD_OFFSET + row * CELL_SIZE + CELL_SIZE/2;
-
-                // a slightly raised plane (so we can see a thin edge line)
-                const cell = new THREE.Mesh(geometry, material.clone());
-                cell.position.set(x, 0, z);
-                cell.rotation.x = -Math.PI/2; // lay flat (Y up)
-                cell.userData.index = i;      // store board index
-                scene.add(cell);
-                cellMeshes.push(cell);
-
-                // Neon edge – using a LineLoop around the square
-                const edgeGeom = new THREE.EdgesGeometry(geometry);
-                const edgeLine = new THREE.LineSegments(edgeGeom, new THREE.LineBasicMaterial({
-                    color: 0x00f3ff,
-                    linewidth: 2,
-                    emissive: new THREE.Color(0x00f3ff),
-                    opacity: 0.5,
-                    transparent: true,
-                }));
-                edgeLine.position.copy(cell.position);
-                edgeLine.rotation.copy(cell.rotation);
-                scene.add(edgeLine);
+            if (turnTimeLeft <= 0) {
+                playSynth('glitch'); speakText('timeout'); triggerShake(true);
+                switchPlayer(); resetTimer();
             }
+            timerAnimId = requestAnimationFrame(updateTimer);
         }
 
-        // ---- Raycaster – used for mouse clicks ----
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
-
-        function onCanvasClick(event) {
-            if (!gameActive) return;
-
-            const rect = canvas.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-            raycaster.setFromCamera(mouse, camera);
-            const intersects = raycaster.intersectObjects(cellMeshes);
-            if (intersects.length > 0) {
-                const cell = intersects[0].object;
-                const idx = cell.userData.index;
-                // Human move (if cell empty)
-                if (!boardState[idx]) {
-                    makeMove(idx, currentPlayer);
-                    // AI turn (if enabled)
-                    if (gameActive && gameMode === 'ai' && currentPlayer === 'O') {
-                        // Show thinking
-                        statusEl.textContent = "AI is thinking...";
-                        // --- 2️⃣ invoke PyScript AI (same as before) ---
-                        pyscript.run(`
-                            best_move = get_best_move(${JSON.stringify(boardState)})
-                            window.aiMove = best_move
-                        `);
-                        // Give PyScript a moment then apply the AI move
-                        setTimeout(()=> {
-                            if (window.aiMove !== undefined && gameActive) {
-                                makeMove(window.aiMove, 'O');
-                                window.aiMove = undefined;
-                            }
-                        }, 500);
-                    }
-                }
-            }
+        function resetTimer() {
+            turnTimeLeft = 100; lastFrameTime = performance.now();
         }
 
-        canvas.addEventListener('pointerdown', onCanvasClick);
-
-        // ---- Visual helpers (blink / highlight) ----
-        function highlightCell(index, on = true) {
-            const mesh = cellMeshes[index];
-            mesh.material.color.set(on ? 0x222222 : 0x111111);
+        function updateUnstableVisuals() {
+            cells.forEach(c => c.classList.remove('unstable'));
+            if (moveHistory[currentPlayer].length === 3) cells[moveHistory[currentPlayer][0]].classList.add('unstable');
         }
 
-        // ---- Symbol Rendering (X / O) ----
-        function addSymbol(index, player) {
-            // 1️⃣ create a canvas with neon X or O
-            const texSize = 256;
-            const c = document.createElement('canvas');
-            c.width = c.height = texSize;
-            const ctx = c.getContext('2d');
-
-            const neonColor = getComputedStyle(document.documentElement)
-                .getPropertyValue(player === 'X' ? '--neon-blue' : '--neon-pink').trim();
-
-            ctx.clearRect(0,0,texSize,texSize);
-            ctx.font = '200px Arial';
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = neonColor;
-            ctx.shadowColor = neonColor;
-            ctx.shadowBlur = 30;
-            ctx.fillText(player, texSize/2, texSize/2);
-
-            const texture = new THREE.CanvasTexture(c);
-            texture.needsUpdate = true;
-            const mat = new THREE.SpriteMaterial({map: texture, transparent:true});
-            const spr = new THREE.Sprite(mat);
-            // scale sprite to cell size (≈0.9 of a cell)
-            const scale = 0.85;
-            spr.scale.set(scale, scale, 1);
-            // Position exactly over the cell center
-            const cell = cellMeshes[index];
-            spr.position.set(cell.position.x, 0.01, cell.position.z);
-            spr.rotation.x = -Math.PI/2; // flat on board
-            scene.add(spr);
-            symbolSprites.push(spr);
-        }
-
-        // ---- Core game functions (unchanged logic, UI adapted) ----
-        function setMode(mode) {
-            gameMode = mode;
-            document.getElementById('btn-pvp').classList.toggle('active', mode === 'pvp');
-            document.getElementById('btn-ai').classList.toggle('active', mode === 'ai');
-            resetGame();
-        }
-
-        function setDifficulty(val) {
-            difficulty = val; // 'hard' or 'easy'
-        }
-
-        function toggleTheme() {
-            // Swap neon colors for a “dark” vs “neon” look
-            const root = document.documentElement;
-            const current = root.style.getPropertyValue('--neon-blue');
-            if (current === '#00f3ff') {
-                root.style.setProperty('--neon-blue', '#ff6a00');
-                root.style.setProperty('--neon-pink', '#ffdf00');
+        function handleMove(index) {
+            if (moveHistory[currentPlayer].length === 3) {
+                const oldestIndex = moveHistory[currentPlayer].shift();
+                board[oldestIndex] = null;
+                cells[oldestIndex].innerText = '';
+                cells[oldestIndex].className = 'cell';
+                
+                playSynth('glitch');
+                triggerShake(true);
+                const rect = cells[oldestIndex].getBoundingClientRect();
+                triggerExplosion(rect.left + rect.width/2, rect.top + rect.height/2, '#fff');
             } else {
-                root.style.setProperty('--neon-blue', '#00f3ff');
-                root.style.setProperty('--neon-pink', '#ff00ff');
+                if(currentPlayer === 'X' || gameMode === 'pvp') speakText('move');
+                else speakText('ai_move');
+            }
+
+            board[index] = currentPlayer;
+            moveHistory[currentPlayer].push(index);
+            cells[index].innerText = currentPlayer;
+            cells[index].classList.add(currentPlayer.toLowerCase());
+
+            playSynth(currentPlayer === 'X' ? 'place_x' : 'place_o');
+            triggerShake(false);
+            const rect = cells[index].getBoundingClientRect();
+            const color = currentPlayer === 'X' ? '#00f0ff' : '#ff003c';
+            triggerExplosion(rect.left + rect.width/2, rect.top + rect.height/2, color);
+
+            if (WIN_COMBOS.some(c => c.every(i => board[i] === currentPlayer))) {
+                const winMsg = gameMode === 'ai' && currentPlayer === 'O' ? "SYSTEM OVERRIDE: AI WINS" : `${currentPlayer} CONTROLS THE NEXUS`;
+                const voiceLine = gameMode === 'ai' && currentPlayer === 'O' ? 'winAI' : (currentPlayer === 'X' ? 'winX' : 'winO');
+                endGame(winMsg, currentPlayer, voiceLine);
+            } else {
+                switchPlayer();
+                resetTimer();
+                updateUnstableVisuals();
             }
         }
 
-        function makeMove(index, player) {
-            if (!gameActive || boardState[index]) return;
-
-            boardState[index] = player;
-            addSymbol(index, player);
-
-            // Highlight the recently placed cell briefly
-            highlightCell(index, true);
-            setTimeout(()=> highlightCell(index, false), 200);
-
-            if (checkWin(player)) {
-                statusEl.textContent = `Player ${player} Wins!`;
-                statusEl.style.color = player === 'X' ? 'var(--neon-blue)' : 'var(--neon-pink)';
-                gameActive = false;
-                highlightWinningCells(player);
-                return;
-            }
-
-            if (!boardState.includes(null)) {
-                statusEl.textContent = "It's a Draw!";
-                gameActive = false;
-                return;
-            }
-
-            // Switch turn
+        function switchPlayer() {
             currentPlayer = currentPlayer === 'X' ? 'O' : 'X';
-            if (gameActive) {
-                statusEl.textContent = `Player ${currentPlayer}'s Turn`;
-                statusEl.style.color = 'var(--text-color)';
+            turnIndicator.innerText = gameMode === 'ai' && currentPlayer === 'O' ? "UPLINK: AI COMPUTING..." : `UPLINK: ${currentPlayer}`;
+            turnIndicator.style.color = currentPlayer === 'X' ? 'var(--neon-cyan)' : 'var(--neon-magenta)';
+
+            if (gameMode === 'ai' && currentPlayer === 'O') {
+                isGameActive = false; // pause inputs
+                setTimeout(() => {
+                    const aiMoveIndex = getBestAIMove();
+                    isGameActive = true;
+                    handleMove(aiMoveIndex);
+                }, 800); // AI thinking delay
             }
         }
 
-        function checkWin(player) {
-            const wins = [
-                [0,1,2],[3,4,5],[6,7,8],
-                [0,3,6],[1,4,7],[2,5,8],
-                [0,4,8],[2,4,6]
-            ];
-            return wins.some(combo=> combo.every(i=> boardState[i]===player));
+        /** HARDCORE AI (Minimax with Quantum Logic) **/
+        function getBestAIMove() {
+            let bestScore = -Infinity;
+            let move = -1;
+            let emptySpots = board.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+            
+            for (let i of emptySpots) {
+                let tempBoard = [...board];
+                let hX = [...moveHistory.X];
+                let hO = [...moveHistory.O];
+                
+                if (hO.length === 3) { tempBoard[hO[0]] = null; hO.shift(); }
+                tempBoard[i] = 'O'; hO.push(i);
+                
+                let score = minimax(tempBoard, 5, false, hX, hO, -Infinity, Infinity);
+                if (score > bestScore) { bestScore = score; move = i; }
+            }
+            return move !== -1 ? move : emptySpots[0];
         }
 
-        function highlightWinningCells(player) {
-            const wins = [
-                [0,1,2],[3,4,5],[6,7,8],
-                [0,3,6],[1,4,7],[2,5,8],
-                [0,4,8],[2,4,6]
-            ];
-            const winCombo = wins.find(combo=> combo.every(i=> boardState[i]===player));
-            if (winCombo) {
-                winCombo.forEach(i=> {
-                    // Tint winning cells a bit brighter
-                    cellMeshes[i].material.color.set(0x222222);
-                });
+        function minimax(tempBoard, depth, isMax, hX, hO, alpha, beta) {
+            let oWins = WIN_COMBOS.some(c => c.every(i => tempBoard[i] === 'O'));
+            let xWins = WIN_COMBOS.some(c => c.every(i => tempBoard[i] === 'X'));
+            
+            if (oWins) return 10 + depth;
+            if (xWins) return -10 - depth;
+            if (depth === 0) return 0; // Evaluate heuristics here if needed
+
+            let emptySpots = tempBoard.map((val, idx) => val === null ? idx : null).filter(val => val !== null);
+            if (emptySpots.length === 0) return 0;
+
+            if (isMax) {
+                let best = -Infinity;
+                for (let i of emptySpots) {
+                    let nextB = [...tempBoard]; let nHO = [...hO];
+                    if (nHO.length === 3) { nextB[nHO[0]] = null; nHO.shift(); }
+                    nextB[i] = 'O'; nHO.push(i);
+                    best = Math.max(best, minimax(nextB, depth - 1, false, hX, nHO, alpha, beta));
+                    alpha = Math.max(alpha, best);
+                    if (beta <= alpha) break;
+                }
+                return best;
+            } else {
+                let best = Infinity;
+                for (let i of emptySpots) {
+                    let nextB = [...tempBoard]; let nHX = [...hX];
+                    if (nHX.length === 3) { nextB[nHX[0]] = null; nHX.shift(); }
+                    nextB[i] = 'X'; nHX.push(i);
+                    best = Math.min(best, minimax(nextB, depth - 1, true, nHX, hO, alpha, beta));
+                    beta = Math.min(beta, best);
+                    if (beta <= alpha) break;
+                }
+                return best;
             }
         }
 
-        function resetGame() {
-            // Clear board data
-            boardState = Array(9).fill(null);
-            currentPlayer = 'X';
-            gameActive = true;
-            statusEl.textContent = "Player X's Turn";
-            statusEl.style.color = 'var(--text-color)';
-
-            // Remove all sprites (X/O)
-            symbolSprites.forEach(s=> scene.remove(s));
-            symbolSprites.length = 0;
-
-            // Reset cell materials
-            cellMeshes.forEach(m=> m.material.color.set(0x111111));
+        function endGame(message, winner, voiceKey) {
+            isGameActive = false; cancelAnimationFrame(timerAnimId);
+            scores[winner]++;
+            document.getElementById(`score-${winner.toLowerCase()}`).innerText = scores[winner];
+            playSynth('win'); speakText(voiceKey);
+            
+            setTimeout(() => {
+                overlayMsg.innerText = message;
+                overlayMsg.style.color = winner === 'X' ? 'var(--neon-cyan)' : 'var(--neon-magenta)';
+                document.querySelector('.menu-options').classList.remove('hidden');
+                overlay.classList.remove('hidden');
+            }, 1000);
         }
 
-        // ---- Animation Loop ----
-        function animate() {
-            requestAnimationFrame(animate);
-            renderer.render(scene, camera);
+        function initGame(mode) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            gameMode = mode;
+            document.getElementById('p2-label').innerText = gameMode === 'ai' ? 'AI [O]' : 'P2 [O]';
+            speakText('move', mode === 'ai' ? "AI initialized. Prepare to lose." : "Multiplayer initialized.");
+
+            board.fill(null); moveHistory = { X: [], O: [] };
+            currentPlayer = 'X'; isGameActive = true;
+            turnIndicator.innerText = `UPLINK: X`; turnIndicator.style.color = 'var(--neon-cyan)';
+            cells.forEach(cell => { cell.innerText = ''; cell.className = 'cell'; });
+            overlay.classList.add('hidden');
+            resetTimer(); timerAnimId = requestAnimationFrame(updateTimer);
         }
-        animate();
 
-        // ---- Kick‑off board creation ----
-        createBoard();
+        cells.forEach(cell => cell.addEventListener('click', (e) => {
+            if (!isGameActive || (gameMode === 'ai' && currentPlayer === 'O')) return;
+            const index = parseInt(e.target.getAttribute('data-index'));
+            if (board[index] === null) handleMove(index);
+        }));
 
-        // Ensure canvas resizes correctly
-        window.addEventListener('resize', () => {
-            const w = canvas.clientWidth;
-            const h = canvas.clientHeight;
-            renderer.setSize(w, h);
-            const aspect = w/h;
-            const frustumSize = 4;
-            camera.left = -frustumSize*aspect/2;
-            camera.right = frustumSize*aspect/2;
-            camera.top = frustumSize/2;
-            camera.bottom = -frustumSize/2;
-            camera.updateProjectionMatrix();
-        });
+        document.getElementById('btn-pvp').addEventListener('click', () => initGame('pvp'));
+        document.getElementById('btn-ai').addEventListener('click', () => initGame('ai'));
+
     </script>
-
-    <!-- ==== PYTHON (AI) – unchanged ==== -->
-    <py-script>
-        import js
-
-        def check_win(board, player):
-            win_conditions = [
-                [0, 1, 2], [3, 4, 5], [6, 7, 8],
-                [0, 3, 6], [1, 4, 7], [2, 5, 8],
-                [0, 4, 8], [2, 4, 6]
-            ]
-            for condition in win_conditions:
-                if all(board[i] == player for i in condition):
-                    return True
-            return False
-
-        def is_board_full(board):
-            return all(cell is not None for cell in board)
-
-        def minimax(board, depth, is_maximizing):
-            if check_win(board, 'O'):
-                return 10 - depth
-            if check_win(board, 'X'):
-                return depth - 10
-            if is_board_full(board):
-                return 0
-
-            if is_maximizing:
-                best_score = -float('inf')
-                for i in range(9):
-                    if board[i] is None:
-                        board[i] = 'O'
-                        score = minimax(board, depth + 1, False)
-                        board[i] = None
-                        best_score = max(score, best_score)
-                return best_score
-            else:
-                best_score = float('inf')
-                for i in range(9):
-                    if board[i] is None:
-                        board[i] = 'X'
-                        score = minimax(board, depth + 1, True)
-                        board[i] = None
-                        best_score = min(score, best_score)
-                return best_score
-
-        import random
-        def get_best_move(board):
-            # If difficulty is set to easy from JS, simply pick a random empty cell
-            # The JS side will set a global `window.difficulty` which we can read:
-            difficulty = js.window.difficulty if hasattr(js.window, 'difficulty') else 'hard'
-
-            empty = [i for i, cell in enumerate(board) if cell is None]
-
-            if difficulty == 'easy':
-                return random.choice(empty) if empty else None
-
-            # --- Hard (Minimax) ---
-            best_score = -float('inf')
-            move = None
-
-            # Optimization: take center if free on first move
-            if len(empty) == 9 or (len(empty) == 8 and board[4] is None):
-                if board[4] is None:
-                    return 4
-
-            for i in empty:
-                board[i] = 'O'
-                score = minimax(board, 0, False)
-                board[i] = None
-                if score > best_score:
-                    best_score = score
-                    move = i
-            return move
-    </py-script>
 </body>
 </html>
