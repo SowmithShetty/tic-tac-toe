@@ -35,7 +35,7 @@ When you place your 4th node, your 1st (oldest) node *glitches out of existence*
 ## 🕹️ How to Play
 
 1. **Clone or Download** the repository.
-2. Open `index.html` in any modern web browser (Chrome, Edge, Firefox, Safari).
+2. Open `game.html` in any modern web browser (Chrome, Edge, Firefox, Safari).
 3. **Turn your volume up** to hear the procedural synth and AI voice lines.
 4. Click **INITIALIZE SYSTEM** to start.
 5. Choose between **Multiplayer (Local)** or **Vs AI (Hardcore)**.
